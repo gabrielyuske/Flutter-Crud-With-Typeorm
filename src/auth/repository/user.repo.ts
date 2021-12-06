@@ -6,18 +6,22 @@ import jwt from "jsonwebtoken";
 @EntityRepository(User)
 export class UserRepository extends Repository<User>{
     //Get User
-    async fetchUser(req:Request,res:Response){
-        const {useremail} = req.body;
-        try{
-            // let data = await this.find();
-            // res.send(data);
-            let data = await this.createQueryBuilder("user")
-                .select()
-                .getMany();
-            res.send(data);
-        }catch(error){
-            console.log(error);
-            res.send(error);
+    async fetchUser(req:any,res:Response){
+        const Btoken = req.headers["authorization"];
+        if (typeof Btoken !== undefined ){
+            req.token = Btoken;
+            jwt.verify(req.token,"key",
+                async (error: any, authData: any) => {
+                    if(error){
+                        res.send(error);
+                    }else{
+                        let data = await this.createQueryBuilder("user")
+                            .select()
+                            .getMany();
+                        res.send(data);
+                    }
+                }
+            )
         }
     }
 
@@ -39,14 +43,15 @@ export class UserRepository extends Repository<User>{
                 .getOne();
             var token = jwt.sign({id:userId},"key",{
                 expiresIn :9999,
+                
             });
             console.log(token);
 
             return res.send({
                 authentication:true, 
+                token:token
             });
 
-            return res.send(userData);
         }catch(error){
             res.send(error);
         }
